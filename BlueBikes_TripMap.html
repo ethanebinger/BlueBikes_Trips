@@ -138,8 +138,8 @@
 		<div class="dropdown" style="float:right;">
 			<button class="dropbtn">Date</button>
 			<div class="dropdown-content">
-				<a href="#" id="201806">June, 2018</a>
-				<a href="#" id="201805">May, 2018</a>
+				<!--<a href="#" id="201806">June, 2018</a>-->
+				<!--<a href="#" id="201805">May, 2018</a>-->
 				<a href="#" id="201804">April, 2018</a>				
 				<a href="#" id="201803">March, 2018</a>
 				<a href="#" id="201802">February, 2018</a>
@@ -171,7 +171,7 @@
 			var towns = svg.append("svg:g")
 				.attr("id", "towns");
 			
-			d3.json("MA_TOWNS_MPO97_TOPO.json", function(error, collection) {
+			d3.json("docs/MA_TOWNS_MPO97_TOPO.json", function(error, collection) {
 				if (error) throw error;
 				
 				towns.selectAll("path")
@@ -190,7 +190,7 @@
 					.attr("id", "cells");
 						
 				// BlueBikes Trips
-				d3.csv("/trip_data/"+filedate+'-tripdata.csv', function(trips) {
+				d3.csv("/docs/trip_data/"+filedate+'-tripdata.csv', function(trips) {
 					var linksByOrigin = {},
 						countByStation = {},
 						locationByStation = {},
@@ -209,7 +209,7 @@
 						countByStation[destination] = (countByStation[destination] || 0) + 1;
 					});
 
-					d3.json('station_information.json', function(stations) {
+					d3.json('https://gbfs.bluebikes.com/gbfs/en/station_information.json', function(stations) {
 						stations = stations.data.stations;
 						// Only consider stations with at least one trip.
 						stations = stations.filter(function(station) {

@@ -190,7 +190,7 @@
 					.attr("id", "cells");
 						
 				// BlueBikes Trips
-				d3.csv("/trip_data/"+filedate+'-tripdata.csv', function(trips) {
+				d3.csv("trip_data/"+filedate+'-tripdata.csv', function(trips) {
 					var linksByOrigin = {},
 						countByStation = {},
 						locationByStation = {},

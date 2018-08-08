@@ -138,8 +138,9 @@
 		<div class="dropdown" style="float:right;">
 			<button class="dropbtn">Date</button>
 			<div class="dropdown-content">
-				<!--<a href="#" id="201806">June, 2018</a>-->
-				<!--<a href="#" id="201805">May, 2018</a>-->
+				<a href="#" id="201807">July, 2018</a>
+                <a href="#" id="201806">June, 2018</a>
+				<a href="#" id="201805">May, 2018</a>
 				<a href="#" id="201804">April, 2018</a>				
 				<a href="#" id="201803">March, 2018</a>
 				<a href="#" id="201802">February, 2018</a>
@@ -190,16 +191,28 @@
 					.attr("id", "cells");
 						
 				// BlueBikes Trips
-				d3.csv("trip_data/"+filedate+'-tripdata.csv', function(trips) {
-					var linksByOrigin = {},
-						countByStation = {},
+				d3.json("trip_data/"+filedate+'-tripdata.json', function(trips) {
+					var linksByOrigin = trips[0],
+                        countByStation = {},
 						locationByStation = {},
 						positions = [];
+                    
+                    var station_ids = Object.keys(linksByOrigin);
+                    for (var i=0; i<station_ids.length; i++) {
+                        var id = station_ids[i];
+                        for (var t=0; t<linksByOrigin[id].length; t++) {
+                            var origin = linksByOrigin[id][t].source,
+                                destination = linksByOrigin[id][t].target;
+                            countByStation[origin] = (countByStation[origin] || 0) + 1;
+                            countByStation[destination] = (countByStation[destination] || 0) + 1;
+                        };
+                    };
 
 					var arc = d3.geo.greatArc()
 						.source(function(d) { return locationByStation[d.source]; })
 						.target(function(d) { return locationByStation[d.target]; });
-
+                    
+                    /*
 					trips.forEach(function(trip) {
 						var origin = trip['start station id'],
 							destination = trip['end station id'],
@@ -208,6 +221,7 @@
 						countByStation[origin] = (countByStation[origin] || 0) + 1;
 						countByStation[destination] = (countByStation[destination] || 0) + 1;
 					});
+                    */
 
 					d3.json('https://gbfs.bluebikes.com/gbfs/en/station_information.json', function(stations) {
 						stations = stations.data.stations;
@@ -283,8 +297,8 @@
 			});
 			
 			// Load Map
-			load_trips("201803");
-			$("#trips_date").text("March, 2018");
+			load_trips("201807");
+			$("#trips_date").text("July, 2018");
 			
 		</script>
 	</body>

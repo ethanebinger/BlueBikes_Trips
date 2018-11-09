@@ -113,7 +113,7 @@
 				$("#loading").show();
 					
 				// Bluebikes Trips for selected month
-				d3.json('/json_data/'+filedate+'-tripdata.json', function(error, trips) {
+				d3.json('json_data/'+filedate+'-tripdata.json', function(error, trips) {
 					if (error) throw error;
 					
 					var linksByOrigin = trips[0],

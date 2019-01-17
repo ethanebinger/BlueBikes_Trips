@@ -250,11 +250,7 @@
 				var year = $("#year_select").find(":selected").val();
 				$("#trips_date").text(month_text + ", " + year);
 				$("#cur_station").text("Bluebikes Trips");
-				if (year+month == "201811" || year+month == "201812") {
-					$("#num_trips").text("No data exists for the selected dates");
-				} else {
-					$("#num_trips").text("");
-				};
+				$("#num_trips").text("");
 				//$("#freq_dest").text("");
 				$(".stations").remove()
 				$(".stations").remove()

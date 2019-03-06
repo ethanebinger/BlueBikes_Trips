@@ -333,10 +333,16 @@
 			};
 			
 			function heatmapChart(data, value) {
-				sortData = function({a, c}) { 
-					return { day, hour, value }; 
-				};
-				data = sortData(data)
+				function pick(data, keys) {
+					var result = {};
+					keys.forEach(function(key) {
+						if (data.hasOwnProperty(key)) {
+							result[key] = data[key];
+						};
+					});
+					return result;
+				}
+				data = pick(data, ['day', 'hour', value])
 				var cards = svgChart.selectAll(".hour")
 					.data(data, function(d) {return d.day+':'+d.hour;});
 				cards.append("title");

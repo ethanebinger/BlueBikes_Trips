@@ -66,6 +66,7 @@
 				https://bl.ocks.org/mbostock/7608400
 				https://bost.ocks.org/mike/leaflet/
 				http://zevross.com/blog/2014/09/30/use-the-amazing-d3-library-to-animate-a-path-on-a-leaflet-map/
+				http://bl.ocks.org/tjdecke/5558084
 				
 			Data reformatted in Python, downloaded from Bluebikes:
 				https://www.bluebikes.com/system-data
@@ -80,11 +81,11 @@
 			<option value="03">March</option>
 			<option value="04">April</option>
 			<option value="05">May</option>
-			<option value="06">June</option>
+			<option value="06" selected="selected">June</option>
 			<option value="07">July</option>
 			<option value="08">August</option>
 			<option value="09">September</option>
-			<option value="10" selected="selected">October</option>
+			<option value="10">October</option>
 			<option value="11">November</option>
 			<option value="12">December</option>
 		</select>
@@ -97,6 +98,7 @@
 			<option value="2016">2016</option>
 			<option value="2017">2017</option>
 			<option value="2018" selected="selected">2018</option>
+			<!--<option value="2019">2019</option>-->
 		</select>
 		<button id="go_button">Go</button>
 		<span id="loading">LOADING...</span>
@@ -134,8 +136,7 @@
 				height = 430 - margin.top - margin.bottom,
 				gridSize = Math.floor(width / 24),
 				legendElementWidth = gridSize*2,
-				colors = ["#ffffe5", "#f7fcb9", "#d9f0a3", "#addd8e", "#78c679", "#41ab5d", "#238443", "#005a32"],
-				//colors = ["#ffffcc", "#a1dab4", "#41b6c4", "#2c7fb8", "#253494"],
+				colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#0c2c84"],
 				days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
 				times = ["1a", "2a", "3a", "4a", "5a", "6a", "7a", "8a", "9a", "10a", "11a", "12a", "1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p", "10p", "11p", "12p"];
 

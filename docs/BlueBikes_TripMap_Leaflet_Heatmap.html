@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Bluebikes Trip Map</title>
+		<style>
+			@import url(//cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.css);
+			/*#map {
+				width: 960px;
+				height: 500px;
+			}*/
+			
+			svg {
+				position: relative;
+			}
+			
+			.stations {
+				fill: rgb(58,156,224);
+				fill-opacity: .8;
+				stroke: #fff;
+				stroke-width: 1.5px;
+			}
+			.stations:hover {
+				fill: brown;
+				fill-opacity: 1;
+				cursor: pointer;
+			}
+			
+			path.arc {
+				pointer-events: none;
+				fill: none;
+				stroke: #000;
+				stroke-width: 0.5px;
+				display: none;
+			}
+			
+			#loading {
+				display: none;
+			}
+			
+			rect.bordered {
+				stroke: #E6E6E6;
+				stroke-width:2px;   
+			}
+
+			text.mono {
+				font-size: 9pt;
+				font-family: Consolas, courier;
+				fill: #aaa;
+			}
+
+			text.axis-workweek {
+				fill: #000;
+			}
+
+			text.axis-worktime {
+				fill: #000;
+			}
+		</style>
+		<script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
+		<script src="https://unpkg.com/topojson@3"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.js"></script>
+		<!--
+			Tremendous help from the following:
+				https://bl.ocks.org/mbostock/7608400
+				https://bost.ocks.org/mike/leaflet/
+				http://zevross.com/blog/2014/09/30/use-the-amazing-d3-library-to-animate-a-path-on-a-leaflet-map/
+				
+			Data reformatted in Python, downloaded from Bluebikes:
+				https://www.bluebikes.com/system-data
+		-->
+	</head>
+	<body>
+		<div id="map"></div>
+		<span>Change to update data: </span>
+		<select id="month_select">
+			<option value="01">January</option>
+			<option value="02">February</option>
+			<option value="03">March</option>
+			<option value="04">April</option>
+			<option value="05">May</option>
+			<option value="06">June</option>
+			<option value="07">July</option>
+			<option value="08">August</option>
+			<option value="09">September</option>
+			<option value="10" selected="selected">October</option>
+			<option value="11">November</option>
+			<option value="12">December</option>
+		</select>
+		<select id="year_select">
+			<!--<option value="2011">2011</option>-->
+			<!--<option value="2012">2012</option>-->
+			<!--<option value="2013">2013</option>-->
+			<!--<option value="2014">2014</option>-->
+			<option value="2015">2015</option>
+			<option value="2016">2016</option>
+			<option value="2017">2017</option>
+			<option value="2018" selected="selected">2018</option>
+		</select>
+		<button id="go_button">Go</button>
+		<span id="loading">LOADING...</span>
+		<h3>
+			<span id="trips_date"></span><br>
+			<span id="cur_station">Bluebikes Trips</span><br>
+			<span id="num_trips"></span><br>
+			<!--<span id="freq_dest"></span>-->
+		</h3>
+		<div id="chart"></div>
+		<script type="text/javascript">
+			
+			// handle map/screen width
+			$("#map").width($(window).width());
+			$("#map").height($(window).height() * 0.6);
+			
+			// create Leaflet map, add baselayer
+			var map = new L.Map("map", {
+				center: [42.34332, -71.07948], 
+				zoom: 11.5
+			})
+			var Esri_WorldGrayCanvas = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+				attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+				maxZoom: 16
+			});
+			map.addLayer(Esri_WorldGrayCanvas);
+
+			// create svg within Leaflet map
+			var svg = d3.select(map.getPanes().overlayPane).append("svg"),
+				g = svg.append("g").attr("class", "leaflet-zoom-hide");
+			
+			// set up heatmap chart
+			var margin = { top: 50, right: 0, bottom: 100, left: 50 },
+				width = 960 - margin.left - margin.right,
+				height = 430 - margin.top - margin.bottom,
+				gridSize = Math.floor(width / 24),
+				legendElementWidth = gridSize*2,
+				//buckets = [50, 100, 200, 400, 800, 1600, 3200, 6400],
+				buckets = [100, 250, 500, 750, 1000, 2000, 3000, 4000],
+				colors = ["#ffffd9","#edf8b1","#c7e9b4","#7fcdbb","#41b6c4","#1d91c0","#225ea8","#253494","#081d58"], // alternatively colorbrewer.YlGnBu[9]
+				days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+				times = ["1a", "2a", "3a", "4a", "5a", "6a", "7a", "8a", "9a", "10a", "11a", "12a", "1p", "2p", "3p", "4p", "5p", "6p", "7p", "8p", "9p", "10p", "11p", "12p"];
+
+			var svgChart = d3.select("#chart").append("svg")
+				.attr("width", width + margin.left + margin.right)
+				.attr("height", height + margin.top + margin.bottom)
+				.append("g")
+					.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+			var dayLabels = svgChart.selectAll(".dayLabel")
+				.data(days)
+				.enter().append("text")
+					.text(function (d) { return d; })
+					.attr("x", 0)
+					.attr("y", function (d, i) { return i * gridSize; })
+					.style("text-anchor", "end")
+					.attr("transform", "translate(-6," + gridSize / 1.5 + ")")
+					.attr("class", function (d, i) { return ((i >= 0 && i <= 4) ? "dayLabel mono axis axis-workweek" : "dayLabel mono axis"); });
+
+			var timeLabels = svgChart.selectAll(".timeLabel")
+				.data(times)
+				.enter().append("text")
+					.text(function(d) { return d; })
+					.attr("x", function(d, i) { return i * gridSize; })
+					.attr("y", 0)
+					.style("text-anchor", "middle")
+					.attr("transform", "translate(" + gridSize / 2 + ", -6)")
+					.attr("class", function(d, i) { return ((i >= 7 && i <= 16) ? "timeLabel mono axis axis-worktime" : "timeLabel mono axis"); });
+			
+			var colorScale = d3.scaleThreshold()
+				.domain(buckets)
+				.range(colors);
+			
+			var legend = svgChart.selectAll(".legend")
+				.data([0].concat(buckets), function(d) { return d; })
+				.enter().append("g")
+					.attr("class", "legend");
+			legend.append("rect")
+				.attr("x", function(d, i) { return legendElementWidth * i; })
+				.attr("y", height)
+				.attr("width", legendElementWidth)
+				.attr("height", gridSize / 2)
+				.style("fill", function(d, i) { return colors[i]; });
+			legend.append("text")
+				.attr("class", "mono")
+				.attr("x", function(d, i) { return legendElementWidth * i; })
+				.attr("y", height + gridSize)
+				.text(function(d) { return "≥ " + Math.round(d); });
+			
+			// asynchronous function to read in data
+			function load_trips(filedate) {
+				$("#loading").show();
+				
+				// Heatmap data for selected month
+				d3.csv('heatmap_data/heatmap_data_'+filedate+'.csv', function(error, heatmap_data) {
+					if (error) throw error;
+					
+					heatmapChart(heatmap_data, 'total');
+				
+					// Bluebikes Trips for selected month
+					d3.json('json_data/'+filedate+'-tripdata.json', function(error, trips) {
+						if (error) throw error;
+						
+						var linksByOrigin = trips[0],
+							countByStation = {},
+							locationByStation = {};
+						
+						var station_ids = Object.keys(linksByOrigin);
+						for (var i=0; i<station_ids.length; i++) {
+							var id = station_ids[i];
+							for (var t=0; t<linksByOrigin[id].length; t++) {
+								var origin = linksByOrigin[id][t].source,
+									destination = linksByOrigin[id][t].target;
+								countByStation[origin] = (countByStation[origin] || 0) + linksByOrigin[id][t].count;
+								countByStation[destination] = (countByStation[destination] || 0) + linksByOrigin[id][t].count;
+							};
+						};
+						
+						// BlueBike Station Locations
+						d3.json("BlueBike_Stations_Oct2018.geojson", function(error, collection) {
+							if (error) throw error;
+							
+							var transform = d3.geo.transform({point: projectPoint}),
+								path = d3.geo.path().projection(transform);
+							
+							// Only consider stations with at least one trip.
+							var stations = collection.features;
+							stations = stations.filter(function(d) {
+								if (countByStation[d.properties.station_id]) {
+									var location = [
+										d.geometry.coordinates[0], 
+										d.geometry.coordinates[1]
+									];
+									locationByStation[d.properties.station_id] = location;
+									return true;
+								}
+							});
+							
+							// create stations
+							var circle = g.selectAll("circle")
+								.data(stations)
+								.enter()
+								.append("circle")
+									.attr("r", 5)	// update to be filled with CSV count data, show size of origin trips
+									.attr("class", "stations")
+									.attr("r", function(d, i) { 
+										return Math.sqrt(countByStation[d.properties.station_id])/4.0; 
+									})
+									.sort(function(a, b) { 
+										return countByStation[b.properties.station_id] - countByStation[a.properties.station_id]; 
+									})
+									.on("mouseover", function(d, i) { 
+										$("#cur_station").text(d.properties.name);
+										$("#num_trips").text(countByStation[d.properties.station_id].toLocaleString() + " trips originating at this station");
+										$(".arc.from_"+(d.properties.station_id).toLocaleString()).show();
+										heatmapChart(heatmap_data, (d.properties.station_id).toLocaleString());
+									})
+									.on("mouseleave", function(d, i) {
+										$("#cur_station").text("Bluebikes Trips");
+										$("#num_trips").text("");
+										$(".arc.from_"+(d.properties.station_id).toLocaleString()).hide();
+										heatmapChart(heatmap_data, 'total');
+									});
+							
+							// create trip lines 
+							var arc = d3.geo.greatArc()
+								.source(function(d) { return locationByStation[d.source]; })
+								.target(function(d) { return locationByStation[d.target]; });
+							
+							var tripLines = g.selectAll(".lines")
+								.data(stations)
+								.enter()
+								.append("g")
+									.attr("class", "lines");
+
+							tripLines.selectAll("path")
+								.data(function(d) { return linksByOrigin[d.properties.station_id] || []; })
+								.enter()
+								.append("path")
+									.attr("class", function(d) { 
+										try { return "arc from_" + d.source + " to_" + d.target; }
+										catch(err) { console.log(err.message); }
+									})
+									.attr("d", function(d) { 
+										try { return path(arc(d)); } 
+										catch(err) { console.log(err.message); }
+									});
+							
+							// update the svg on map updates
+							map.on("viewreset", reset);
+							map.on("zoomend", reset);
+							reset();
+
+							// Reposition the SVG
+							function reset() {
+								var bounds = path.bounds(collection),
+									topLeft = bounds[0],
+									bottomRight = bounds[1];
+
+								svg.attr("width", bottomRight[0] - topLeft[0] + 120)
+									.attr("height", bottomRight[1] - topLeft[1] + 120)
+									.style("left", topLeft[0] -50 + "px")
+									.style("top", topLeft[1] -50 + "px");
+								
+								g.attr("transform", "translate(" + (-topLeft[0] + 50) + "," + (-topLeft[1] + 50) + ")");
+
+								circle.attr("transform", function(d) {
+									var y = d.geometry.coordinates[1]
+									var x = d.geometry.coordinates[0]
+									return "translate(" +
+										map.latLngToLayerPoint(new L.LatLng(y, x)).x + "," +
+										map.latLngToLayerPoint(new L.LatLng(y, x)).y + ")";
+								});
+								
+								tripLines.selectAll("path")
+									.data(function(d) { return linksByOrigin[d.properties.station_id] || []; })
+									.attr("d", function(d) { 
+										try { return path(arc(d)); } 
+										catch(err) { console.log(err.message); }
+									});
+								
+							};
+
+							// Use Leaflet to implement a D3 geometric transformation.
+							function projectPoint(x, y) {
+								var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+								this.stream.point(point.x, point.y);
+							};
+							
+							// done
+							$("#loading").hide();
+						});
+					});
+				});
+			};
+			
+			function heatmapChart(data, value) {
+				sortData = function({a, c}) { 
+					return { day, hour, value }; 
+				};
+				data = sortData(data)
+				var cards = svgChart.selectAll(".hour")
+					.data(data, function(d) {return d.day+':'+d.hour;});
+				cards.append("title");
+				cards.enter().append("rect")
+					.attr("x", function(d) { return (d.hour) * gridSize; })
+					.attr("y", function(d) { return (d.day) * gridSize; })
+					.attr("rx", 4)
+					.attr("ry", 4)
+					.attr("class", "hour bordered")
+					.attr("width", gridSize)
+					.attr("height", gridSize)
+					.style("fill", function(d) { return colorScale(d.value); });
+				cards.transition().duration(1000)
+					.style("fill", function(d) { return colorScale(d.value); });
+				cards.select("title").text(function(d) { return d.value; });
+				cards.exit().remove();
+			};
+			
+			$("#go_button").on("click", function(e) {
+				var month = $("#month_select").find(":selected").val();
+				var month_text = $("#month_select").find(":selected").text();
+				var year = $("#year_select").find(":selected").val();
+				$("#trips_date").text(month_text + ", " + year);
+				$("#cur_station").text("Bluebikes Trips");
+				$("#num_trips").text("");
+				//$("#freq_dest").text("");
+				$(".stations").remove()
+				$(".stations").remove()
+				$(".lines").remove()
+				load_trips(year+month);
+			});
+			
+			// Load Map
+			$("#go_button").click();
+			
+		</script>
+	</body>
+</html>

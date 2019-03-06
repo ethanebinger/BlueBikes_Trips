@@ -170,6 +170,8 @@
 									$(".arc.from_"+(d.properties.station_id).toLocaleString()).show();
 								})
 								.on("mouseleave", function(d, i) {
+									$("#cur_station").text("Bluebikes Trips");
+									$("#num_trips").text("");
 									$(".arc.from_"+(d.properties.station_id).toLocaleString()).hide();
 								});
 						

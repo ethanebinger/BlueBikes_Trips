@@ -185,18 +185,10 @@
 				.attr("y", height + gridSize)
 				.text(function(d) { return "≥ " + Math.round(d); });
 			
-			var heatmapChart = function(heatmap_data, value) {
-				var data = heatmap_data;
-				for (i=0; i<data.length; i++) {
-					data[i] = {
-						'day': data[i].day,
-						'hour': data[i].hour,
-						'value': data[i][value]
-					};
-				};
+			var heatmapChart = function(data, value) {
 				var cards = svgChart.selectAll(".hour")
 					.data(data, function(d) {return d.day+':'+d.hour;});
-				cards.append("title");
+				//cards.append("title");
 				cards.enter().append("rect")
 					.attr("x", function(d) { return (d.hour) * gridSize; })
 					.attr("y", function(d) { return (d.day) * gridSize; })
@@ -205,10 +197,10 @@
 					.attr("class", "hour bordered")
 					.attr("width", gridSize)
 					.attr("height", gridSize)
-					.style("fill", function(d) { return colorScale(d.value); });
+					.style("fill", function(d) { return colorScale(d[value]); });
 				cards.transition().duration(100)
-					.style("fill", function(d) { return colorScale(d.value); });
-				cards.select("title").text(function(d) { return d.value; });
+					.style("fill", function(d) { return colorScale(d[value]); });
+				//cards.select("title").text(function(d) { return d[value]; });
 				cards.exit().remove();
 			};
 			

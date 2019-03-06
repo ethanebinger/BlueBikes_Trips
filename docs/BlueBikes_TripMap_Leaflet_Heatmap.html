@@ -165,7 +165,7 @@
 					.attr("transform", "translate(" + gridSize / 2 + ", -6)")
 					.attr("class", function(d, i) { return ((i >= 7 && i <= 16) ? "timeLabel mono axis axis-worktime" : "timeLabel mono axis"); });
 			
-			var colorScale = d3.scale.ordinal()
+			var colorScale = d3.scale.threshold()
 				.domain(buckets)
 				.range(colors);
 			

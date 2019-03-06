@@ -186,16 +186,13 @@
 				.text(function(d) { return "≥ " + Math.round(d); });
 			
 			function heatmapChart(data, value) {
-				function pick(data, keys) {
-					var result = {};
-					keys.forEach(function(key) {
-						if (data.hasOwnProperty(key)) {
-							result[key] = data[key];
-						};
-					});
-					return result;
-				}
-				data = pick(data, ['day', 'hour', value])
+				for (i=0; i<data.length; i++) {
+					data[i] = {
+						'day': data[i].day,
+						'hour': data[i].hour,
+						'total': data[i][value]
+					};
+				};
 				var cards = svgChart.selectAll(".hour")
 					.data(data, function(d) {return d.day+':'+d.hour;});
 				cards.append("title");

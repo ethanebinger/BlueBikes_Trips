@@ -312,25 +312,27 @@
 									.sort(function(a, b) { 
 										return countByStation[b.properties.station_id] - countByStation[a.properties.station_id]; 
 									})
-									/*
+									
 									.on("mouseover", function(d, i) { 
-										$("#cur_station").text(d.properties.name);
-										$("#num_trips").text(countByStation[d.properties.station_id].toLocaleString() + " trips originating at this station");
+										//$("#cur_station").text(d.properties.name);
+										//$("#num_trips").text(countByStation[d.properties.station_id].toLocaleString() + " trips originating at this station");
 										$(".arc.from_"+(d.properties.station_id).toLocaleString()).show();
-										heatmapChart(heatmap_data, (d.properties.station_id).toLocaleString());
+										//heatmapChart(heatmap_data, (d.properties.station_id).toLocaleString());
 									})
 									.on("mouseleave", function(d, i) {
-										$("#cur_station").text("Bluebikes Trips");
-										$("#num_trips").text("");
-										$(".arc.from_"+(d.properties.station_id).toLocaleString()).hide();
-										heatmapChart(heatmap_data, 'total');
+										//$("#cur_station").text("Bluebikes Trips");
+										//$("#num_trips").text("");
+										if(!$(this).hasClass("clicked_station")) {
+											$(".arc.from_"+(d.properties.station_id).toLocaleString()).hide();
+										};
+										//heatmapChart(heatmap_data, 'total');
 									})
-									//*/
 									.on("click", function(d, i) { 
 										$("#cur_station").text(d.properties.name);
 										$("#num_trips").text(countByStation[d.properties.station_id].toLocaleString() + " trips originating at this station");
 										$(".arc").hide();
 										$(".arc.from_"+(d.properties.station_id).toLocaleString()).show();
+										$(this).addClass("clicked_station");
 										heatmapChart(heatmap_data, (d.properties.station_id).toLocaleString());
 										d3.event.stopPropagation();
 									});
@@ -342,6 +344,7 @@
 								for (i=0; i<heatmap_data.length; i++) { cur_trip_total += +heatmap_data[i].total; };
 								$("#num_trips").text(cur_trip_total.toLocaleString() + " total trips");
 								$(".arc").hide();
+								$(this).removeClass("clicked_station");
 								heatmapChart(heatmap_data, 'total');
 							});
 					

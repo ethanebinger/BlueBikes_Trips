@@ -5,15 +5,15 @@
 		<title>Bluebikes Trip Map</title>
 		<style>
 			@import url(//cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.css);
-			/*#map {
-				width: 960px;
+			#map {
+				width: 930px;
 				height: 500px;
-			}*/
+				margin-left: 20px;
+			}
 			
 			svg {
 				position: relative;
 			}
-			
 			.stations {
 				fill: rgb(58,156,224);
 				fill-opacity: .8;
@@ -34,6 +34,10 @@
 				display: none;
 			}
 			
+			#title,
+			#caption_box {
+				margin-left: 20px;
+			}
 			#loading {
 				display: none;
 			}
@@ -42,78 +46,106 @@
 				stroke: #E6E6E6;
 				stroke-width:2px;   
 			}
-
 			text.mono {
 				font-size: 9pt;
 				font-family: Consolas, courier;
 				fill: #aaa;
 			}
-
 			text.axis-workweek {
 				fill: #000;
 			}
-
 			text.axis-worktime {
 				fill: #000;
+			}
+			
+			.d3-tip {
+				line-height: 1;
+				font-weight: bold;
+				padding: 12px;
+				background: rgba(0, 0, 0, 0.8);
+				color: #fff;
+				border-radius: 2px;
+			}
+			.d3-tip:after {
+				box-sizing: border-box;
+				display: inline;
+				font-size: 10px;
+				width: 100%;
+				line-height: 1;
+				color: rgba(0, 0, 0, 0.8);
+				content: "\25BC";
+				position: absolute;
+				text-align: center;
+			}
+			.d3-tip.n:after {
+				margin: -1px 0 0 0;
+				top: 100%;
+				left: 0;
 			}
 		</style>
 		<script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
 		<script src="https://unpkg.com/topojson@3"></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/leaflet.js"></script>
+		<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
 		<!--
 			Tremendous help from the following:
 				https://bl.ocks.org/mbostock/7608400
 				https://bost.ocks.org/mike/leaflet/
 				http://zevross.com/blog/2014/09/30/use-the-amazing-d3-library-to-animate-a-path-on-a-leaflet-map/
 				http://bl.ocks.org/tjdecke/5558084
+				http://bl.ocks.org/Caged/6476579
 				
 			Data reformatted in Python, downloaded from Bluebikes:
 				https://www.bluebikes.com/system-data
 		-->
 	</head>
 	<body>
+		<h3 id="title">BlueBike Trip Explorer</h3>
 		<div id="map"></div>
-		<span>Change to update data: </span>
-		<select id="month_select">
-			<option value="01">January</option>
-			<option value="02">February</option>
-			<option value="03">March</option>
-			<option value="04">April</option>
-			<option value="05">May</option>
-			<option value="06" selected="selected">June</option>
-			<option value="07">July</option>
-			<option value="08">August</option>
-			<option value="09">September</option>
-			<option value="10">October</option>
-			<option value="11">November</option>
-			<option value="12">December</option>
-		</select>
-		<select id="year_select">
-			<!--<option value="2011">2011</option>-->
-			<!--<option value="2012">2012</option>-->
-			<!--<option value="2013">2013</option>-->
-			<!--<option value="2014">2014</option>-->
-			<option value="2015">2015</option>
-			<option value="2016">2016</option>
-			<option value="2017">2017</option>
-			<option value="2018" selected="selected">2018</option>
-			<!--<option value="2019">2019</option>-->
-		</select>
-		<button id="go_button">Go</button>
-		<span id="loading">LOADING...</span>
-		<h3>
-			<span id="trips_date"></span><br>
-			<span id="cur_station">Bluebikes Trips</span><br>
-			<span id="num_trips"></span><br>
-			<!--<span id="freq_dest"></span>-->
-		</h3>
+		<div id="caption_box">
+			<br>
+			<span>Change to update data: </span>
+			<select id="month_select">
+				<option value="01">January</option>
+				<option value="02">February</option>
+				<option value="03">March</option>
+				<option value="04">April</option>
+				<option value="05">May</option>
+				<option value="06" selected="selected">June</option>
+				<option value="07">July</option>
+				<option value="08">August</option>
+				<option value="09">September</option>
+				<option value="10">October</option>
+				<option value="11">November</option>
+				<option value="12">December</option>
+			</select>
+			<select id="year_select">
+				<!--<option value="2011">2011</option>-->
+				<!--<option value="2012">2012</option>-->
+				<!--<option value="2013">2013</option>-->
+				<!--<option value="2014">2014</option>-->
+				<option value="2015">2015</option>
+				<option value="2016">2016</option>
+				<option value="2017">2017</option>
+				<option value="2018" selected="selected">2018</option>
+				<!--<option value="2019">2019</option>-->
+			</select>
+			<button id="go_button">Go</button>
+			<span id="loading">LOADING...</span>
+			<h3>
+				<span id="trips_date"></span><br>
+				<span id="cur_station">Bluebikes Trips</span><br>
+				<span id="num_trips"></span><br>
+				<!--<span id="freq_dest"></span>-->
+			</h3>
+		</div>
 		<div id="chart"></div>
 		<script type="text/javascript">
 			
 			// handle map/screen width
-			$("#map").width($(window).width());
-			$("#map").height($(window).height() * 0.6);
+			//$("#map").width($(window).width());
+			//$("#map").height($(window).height() * 0.6);
 			
 			// create Leaflet map, add baselayer
 			var map = new L.Map("map", {
@@ -130,8 +162,13 @@
 			var svg = d3.select(map.getPanes().overlayPane).append("svg"),
 				g = svg.append("g").attr("class", "leaflet-zoom-hide");
 			
+			// create tip
+			var tip = d3.tip()
+				.attr('class', 'd3-tip')
+				.offset([-5, 0]);
+			
 			// set up heatmap chart
-			var margin = { top: 50, right: 0, bottom: 100, left: 50 },
+			var margin = { top: 20, right: 0, bottom: 100, left: 50 },
 				width = 960 - margin.left - margin.right,
 				height = 430 - margin.top - margin.bottom,
 				gridSize = Math.floor(width / 24),
@@ -143,9 +180,10 @@
 			var svgChart = d3.select("#chart").append("svg")
 				.attr("width", width + margin.left + margin.right)
 				.attr("height", height + margin.top + margin.bottom)
+				.call(tip)
 				.append("g")
 					.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
+			
 			var dayLabels = svgChart.selectAll(".dayLabel")
 				.data(days)
 				.enter().append("text")
@@ -165,12 +203,16 @@
 					.style("text-anchor", "middle")
 					.attr("transform", "translate(" + gridSize / 2 + ", -6)")
 					.attr("class", function(d, i) { return ((i >= 7 && i <= 16) ? "timeLabel mono axis axis-worktime" : "timeLabel mono axis"); });
-				
+			
 			// function to create and update heatmap
 			var heatmapChart = function(data, value) {
 				var colorScale = d3.scale.quantile()
 					.domain([0, d3.max(data, function(d) { return +d[value]; })])
 					.range(colors);
+				
+				tip.html(function(d) {
+					return "<span>" + (+d[value]).toLocaleString() + " trips</span>";
+				})
 				
 				var cards = svgChart.selectAll(".hour")
 					.data(data, function(d) {return d.day+':'+d.hour;});
@@ -182,7 +224,9 @@
 					.attr("class", "hour bordered")
 					.attr("width", gridSize)
 					.attr("height", gridSize)
-					.style("fill", function(d) { return colorScale(+d[value]); });
+					.style("fill", function(d) { return colorScale(+d[value]); })
+					.on('mouseover', tip.show)
+					.on('mouseout', tip.hide);
 				cards.transition().duration(100)
 					.style("fill", function(d) { return colorScale(+d[value]); });
 				cards.exit().remove();
@@ -193,14 +237,14 @@
 					.attr("class", "legend");
 				legend.append("rect")
 					.attr("x", function(d, i) { return legendElementWidth * i; })
-					.attr("y", height)
+					.attr("y", height - margin.top)
 					.attr("width", legendElementWidth)
 					.attr("height", gridSize / 2)
 					.style("fill", function(d, i) { return colors[i]; });
 				legend.append("text")
 					.attr("class", "mono")
 					.attr("x", function(d, i) { return legendElementWidth * i; })
-					.attr("y", height + gridSize)
+					.attr("y", height + gridSize - margin.top)
 					.text(function(d) { return "≥ " + Math.round(d); });
 				legend.exit().remove();
 				
@@ -268,6 +312,7 @@
 									.sort(function(a, b) { 
 										return countByStation[b.properties.station_id] - countByStation[a.properties.station_id]; 
 									})
+									/*
 									.on("mouseover", function(d, i) { 
 										$("#cur_station").text(d.properties.name);
 										$("#num_trips").text(countByStation[d.properties.station_id].toLocaleString() + " trips originating at this station");
@@ -279,8 +324,27 @@
 										$("#num_trips").text("");
 										$(".arc.from_"+(d.properties.station_id).toLocaleString()).hide();
 										heatmapChart(heatmap_data, 'total');
+									})
+									//*/
+									.on("click", function(d, i) { 
+										$("#cur_station").text(d.properties.name);
+										$("#num_trips").text(countByStation[d.properties.station_id].toLocaleString() + " trips originating at this station");
+										$(".arc").hide();
+										$(".arc.from_"+(d.properties.station_id).toLocaleString()).show();
+										heatmapChart(heatmap_data, (d.properties.station_id).toLocaleString());
+										d3.event.stopPropagation();
 									});
 							
+							// "off" click handler
+							svg.on("click", function(d, i) {
+								$("#cur_station").text("All Stations");
+								var cur_trip_total = 0
+								for (i=0; i<heatmap_data.length; i++) { cur_trip_total += +heatmap_data[i].total; };
+								$("#num_trips").text(cur_trip_total.toLocaleString() + " total trips");
+								$(".arc").hide();
+								heatmapChart(heatmap_data, 'total');
+							});
+					
 							// create trip lines 
 							var arc = d3.geo.greatArc()
 								.source(function(d) { return locationByStation[d.source]; })
@@ -347,6 +411,10 @@
 							};
 							
 							// done
+							$("#cur_station").text("All Stations");
+							var cur_trip_total = 0;
+							for (i=0; i<heatmap_data.length; i++) { cur_trip_total += +heatmap_data[i].total; };
+							$("#num_trips").text(cur_trip_total.toLocaleString() + " total trips");
 							$("#loading").hide();
 						});
 					});
@@ -358,7 +426,7 @@
 				var month_text = $("#month_select").find(":selected").text();
 				var year = $("#year_select").find(":selected").val();
 				$("#trips_date").text(month_text + ", " + year);
-				$("#cur_station").text("Bluebikes Trips");
+				$("#cur_station").text("");
 				$("#num_trips").text("");
 				//$("#freq_dest").text("");
 				$(".stations").remove()

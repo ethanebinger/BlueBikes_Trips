@@ -328,9 +328,10 @@
 										//heatmapChart(heatmap_data, 'total');
 									})
 									.on("click", function(d, i) { 
+										$(".arc").hide();
+										$(".stations").removeClass("clicked_station");
 										$("#cur_station").text(d.properties.name);
 										$("#num_trips").text(countByStation[d.properties.station_id].toLocaleString() + " trips originating at this station");
-										$(".arc").hide();
 										$(".arc.from_"+(d.properties.station_id).toLocaleString()).show();
 										$(this).addClass("clicked_station");
 										heatmapChart(heatmap_data, (d.properties.station_id).toLocaleString());

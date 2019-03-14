@@ -339,14 +339,22 @@
 									});
 							
 							// "off" click handler
-							svg.on("click", function(d, i) {
-								$("#cur_station").text("All Stations");
-								var cur_trip_total = 0
-								for (i=0; i<heatmap_data.length; i++) { cur_trip_total += +heatmap_data[i].total; };
-								$("#num_trips").text(cur_trip_total.toLocaleString() + " total trips");
-								$(".arc").hide();
-								$(this).removeClass("clicked_station");
-								heatmapChart(heatmap_data, 'total');
+							$("#map").on('mousedown', function (evt) {
+								$("#map").on('mouseup mousemove', function handler(evt) {
+									if (evt.type === 'mouseup') {
+										// click
+										$("#cur_station").text("All Stations");
+										var cur_trip_total = 0
+										for (i=0; i<heatmap_data.length; i++) { cur_trip_total += +heatmap_data[i].total; };
+										$("#num_trips").text(cur_trip_total.toLocaleString() + " total trips");
+										$(".arc").hide();
+										$(this).removeClass("clicked_station");
+										heatmapChart(heatmap_data, 'total');
+									} else {
+										// drag
+									};
+									$("#map").off('mouseup mousemove', handler);
+								});
 							});
 					
 							// create trip lines 

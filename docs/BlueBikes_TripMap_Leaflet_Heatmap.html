@@ -29,8 +29,8 @@
 			path.arc {
 				pointer-events: none;
 				fill: none;
-				stroke: #000;
-				stroke-width: 0.5px;
+				stroke: #252525;
+				/*stroke-width: 0.5px;*/
 				display: none;
 			}
 			
@@ -356,20 +356,26 @@
 									$("#map").off('mouseup mousemove', handler);
 								});
 							});
-					
+							
 							// create trip lines 
 							var arc = d3.geo.greatArc()
 								.source(function(d) { return locationByStation[d.source]; })
 								.target(function(d) { return locationByStation[d.target]; });
 							
+							var widthScale = d3.scale.quantile()
+								.range([0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]);
+								
 							var tripLines = g.selectAll(".lines")
 								.data(stations)
 								.enter()
 								.append("g")
 									.attr("class", "lines");
-
+							
 							tripLines.selectAll("path")
-								.data(function(d) { return linksByOrigin[d.properties.station_id] || []; })
+								.data(function(d) { 
+									widthScale.domain([0, d3.max(linksByOrigin[d.properties.station_id], function(x) { return x.count; })])
+									return linksByOrigin[d.properties.station_id] || []; 
+								})
 								.enter()
 								.append("path")
 									.attr("class", function(d) { 
@@ -378,6 +384,10 @@
 									})
 									.attr("d", function(d) { 
 										try { return path(arc(d)); } 
+										catch(err) { console.log(err.message); }
+									})
+									.style("stroke-width", function(d) { 
+										try { return widthScale(d.count); } 
 										catch(err) { console.log(err.message); }
 									});
 							
